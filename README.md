@@ -20,3 +20,4 @@ Vela is a modern Material 3 Android media downloader powered by `yt-dlp`, `FFmpe
 ./gradlew :app:testDebugUnitTest :app:assembleDebug
 ```
 The debug APK is generated at `app/build/outputs/apk/debug/app-debug.apk`.
+

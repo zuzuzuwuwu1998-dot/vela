@@ -101,11 +101,12 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun handleShareIntent(intent: Intent?) {
-        if (intent?.action == Intent.ACTION_SEND && intent.type == "text/plain") {
-            intent.getStringExtra(Intent.EXTRA_TEXT)?.let { shared ->
-                viewModel.handleSharedUrl(shared)
-            }
+        val rawText = when (intent?.action) {
+            Intent.ACTION_SEND -> intent.getStringExtra(Intent.EXTRA_TEXT)
+            Intent.ACTION_PROCESS_TEXT -> intent.getCharSequenceExtra(Intent.EXTRA_PROCESS_TEXT)?.toString()
+            else -> null
         }
+        rawText?.let { viewModel.handleSharedUrl(it) }
     }
 }
 

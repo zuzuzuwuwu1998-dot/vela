@@ -8,9 +8,16 @@ enum class PlatformType(val label: String, val badgeHex: Long) {
     YOUTUBE("YouTube", 0xFFFF3D57),
     TIKTOK("TikTok", 0xFF25F4EE),
     INSTAGRAM("Instagram", 0xFFE1306C),
+    FACEBOOK("Facebook", 0xFF1877F2),
+    THREADS("Threads", 0xFFE0E0E0),
     X_TWITTER("X / Twitter", 0xFF1DA1F2),
     SOUNDCLOUD("SoundCloud", 0xFFFF7700),
     REDDIT("Reddit", 0xFFFF4500),
+    BILIBILI("Bilibili", 0xFF00A1D6),
+    TWITCH("Twitch", 0xFF9146FF),
+    PINTEREST("Pinterest", 0xFFE60023),
+    VIMEO("Vimeo", 0xFF1AB7EA),
+    CAPCUT("CapCut", 0xFF00F0FF),
     GENERIC("Web Media", 0xFF7C5CFF);
 
     companion object {
@@ -18,11 +25,18 @@ enum class PlatformType(val label: String, val badgeHex: Long) {
             val lower = url.lowercase()
             return when {
                 "youtube.com" in lower || "youtu.be" in lower -> YOUTUBE
-                "tiktok.com" in lower || "vt.tiktok.com" in lower -> TIKTOK
+                "tiktok.com" in lower || "douyin.com" in lower -> TIKTOK
                 "instagram.com" in lower || "instagr.am" in lower -> INSTAGRAM
-                "twitter.com" in lower || "x.com" in lower -> X_TWITTER
-                "soundcloud.com" in lower -> SOUNDCLOUD
-                "reddit.com" in lower || "v.redd.it" in lower -> REDDIT
+                "facebook.com" in lower || "fb.watch" in lower || "fb.com" in lower -> FACEBOOK
+                "threads.net" in lower || "threads.com" in lower -> THREADS
+                "twitter.com" in lower || "x.com" in lower || "t.co/" in lower -> X_TWITTER
+                "soundcloud.com" in lower || "on.soundcloud.com" in lower -> SOUNDCLOUD
+                "reddit.com" in lower || "v.redd.it" in lower || "redd.it" in lower -> REDDIT
+                "bilibili.com" in lower || "b23.tv" in lower -> BILIBILI
+                "twitch.tv" in lower -> TWITCH
+                "pinterest.com" in lower || "pin.it" in lower -> PINTEREST
+                "vimeo.com" in lower -> VIMEO
+                "capcut.com" in lower -> CAPCUT
                 else -> GENERIC
             }
         }

@@ -119,6 +119,8 @@ class VelaDownloadEngine(private val context: Context) {
         request.addOption("-o", template)
         request.addOption("--no-mtime")
         request.addOption("--no-playlist")
+        request.addOption("--no-check-certificates")
+        request.addOption("--geo-bypass")
 
         if (options.useAria2c) {
             request.addOption("--external-downloader", "aria2c")

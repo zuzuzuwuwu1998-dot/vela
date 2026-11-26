@@ -37,7 +37,7 @@ def run_download_job(job_id: str, payload: dict) -> None:
     job_dir.mkdir(parents=True, exist_ok=True)
     out_tpl = str(job_dir / "%(title).80s.%(ext)s")
 
-    cmd = ["yt-dlp", "--newline", "--no-playlist", "-o", out_tpl]
+    cmd = ["yt-dlp", "--newline", "--no-playlist", "--no-check-certificates", "--geo-bypass", "-o", out_tpl]
 
     if mode == "AUDIO":
         fmt = "mp3"

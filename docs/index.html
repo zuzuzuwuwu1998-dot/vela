@@ -592,11 +592,23 @@
     function detectPlatform(url) {
       const u = url.toLowerCase();
       if (!u.trim()) return 'Ready';
-      if (u.includes('tiktok.com')) return 'TikTok';
+      if (u.includes('tiktok.com') || u.includes('douyin.com')) return 'TikTok';
       if (u.includes('youtube.com') || u.includes('youtu.be')) return 'YouTube';
-      if (u.includes('instagram.com')) return 'Instagram';
-      if (u.includes('x.com') || u.includes('twitter.com')) return 'X / Twitter';
+      if (u.includes('instagram.com') || u.includes('instagr.am')) return 'Instagram';
+      if (u.includes('facebook.com') || u.includes('fb.watch') || u.includes('fb.com')) return 'Facebook';
+      if (u.includes('threads.net') || u.includes('threads.com')) return 'Threads';
+      if (u.includes('x.com') || u.includes('twitter.com') || u.includes('t.co/')) return 'X / Twitter';
       if (u.includes('soundcloud.com')) return 'SoundCloud';
+      if (u.includes('reddit.com') || u.includes('redd.it')) return 'Reddit';
+      if (u.includes('bilibili.com') || u.includes('b23.tv')) return 'Bilibili';
+      if (u.includes('twitch.tv')) return 'Twitch';
+      if (u.includes('pinterest.com') || u.includes('pin.it')) return 'Pinterest';
+      if (u.includes('vimeo.com')) return 'Vimeo';
+      if (u.includes('capcut.com')) return 'CapCut';
+      try {
+        const host = new URL(url.trim()).hostname.replace(/^www\./, '');
+        if (host) return host;
+      } catch {}
       return 'Web Media';
     }
 
