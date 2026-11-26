@@ -37,11 +37,26 @@ class VelaDownloadEngine(private val context: Context) {
         return velaDir
     }
 
-    suspend fun fetchMediaInfo(url: String): Result<MediaPreview> = withContext(Dispatchers.IO) {
+    private fun applyCommonNetworkOptions(request: YoutubeDLRequest, cookiesTxt: String) {
+        request.addOption("--no-check-certificates")
+        request.addOption("--geo-bypass")
+        request.addOption(
+            "--user-agent",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+        )
+        if (cookiesTxt.isNotBlank()) {
+            val cookieFile = File(context.filesDir, "vela_cookies.txt")
+            cookieFile.writeText(cookiesTxt)
+            request.addOption("--cookies", cookieFile.absolutePath)
+        }
+    }
+
+    suspend fun fetchMediaInfo(url: String, cookiesTxt: String = ""): Result<MediaPreview> = withContext(Dispatchers.IO) {
         runCatching {
             val request = YoutubeDLRequest(url).apply {
                 addOption("--no-playlist")
                 addOption("--socket-timeout", "15")
+                applyCommonNetworkOptions(this, cookiesTxt)
             }
             val info = YoutubeDL.getInstance().getInfo(request)
             val approxBytes = info.formats
@@ -63,12 +78,13 @@ class VelaDownloadEngine(private val context: Context) {
         taskId: String,
         url: String,
         options: DownloadOptions,
+        cookiesTxt: String = "",
         onProgress: (progress: Float, etaSeconds: Long, line: String) -> Unit
     ): Result<DownloadResult> = withContext(Dispatchers.IO) {
         runCatching {
             val outDir = getOutputDirectory(options.mode)
             val markerPrefix = "VELA_${taskId.take(8)}_"
-            val request = buildRequest(url, options, outDir, markerPrefix)
+            val request = buildRequest(url, options, outDir, markerPrefix, cookiesTxt)
 
             val response = YoutubeDL.getInstance().execute(request, taskId) { progress, etaInSeconds, line ->
                 onProgress(progress.coerceIn(0f, 100f), etaInSeconds, line ?: "")
@@ -112,15 +128,15 @@ class VelaDownloadEngine(private val context: Context) {
         url: String,
         options: DownloadOptions,
         outDir: File,
-        markerPrefix: String
+        markerPrefix: String,
+        cookiesTxt: String
     ): YoutubeDLRequest {
         val request = YoutubeDLRequest(url)
         val template = File(outDir, "${markerPrefix}%(title).80s.%(ext)s").absolutePath
         request.addOption("-o", template)
         request.addOption("--no-mtime")
         request.addOption("--no-playlist")
-        request.addOption("--no-check-certificates")
-        request.addOption("--geo-bypass")
+        applyCommonNetworkOptions(request, cookiesTxt)
 
         if (options.useAria2c) {
             request.addOption("--external-downloader", "aria2c")

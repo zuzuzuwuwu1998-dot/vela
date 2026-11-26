@@ -170,7 +170,8 @@ data class VelaSettings(
     val dynamicColor: Boolean = false,
     val defaultUseAria2c: Boolean = false,
     val defaultSponsorBlock: Boolean = false,
-    val defaultEmbedThumbnail: Boolean = true
+    val defaultEmbedThumbnail: Boolean = true,
+    val cookiesTxt: String = ""
 )
 
 fun formatDuration(seconds: Long): String {

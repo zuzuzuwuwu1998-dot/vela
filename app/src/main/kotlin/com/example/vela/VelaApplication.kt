@@ -38,6 +38,14 @@ class VelaApplication : Application() {
                 Aria2c.getInstance().init(this@VelaApplication)
                 val version = YoutubeDL.getInstance().version(this@VelaApplication)
                 _engineStatus.value = EngineStatus.Ready(version)
+                runCatching {
+                    YoutubeDL.getInstance().updateYoutubeDL(
+                        this@VelaApplication,
+                        YoutubeDL.UpdateChannel.STABLE
+                    )
+                    val updatedVersion = YoutubeDL.getInstance().version(this@VelaApplication)
+                    _engineStatus.value = EngineStatus.Ready(updatedVersion)
+                }
             } catch (e: Throwable) {
                 _engineStatus.value = EngineStatus.Error(e.message ?: "Engine initialization failed")
             }

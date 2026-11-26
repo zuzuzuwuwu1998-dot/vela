@@ -18,6 +18,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -124,6 +125,19 @@ fun SettingsSheet(
                 subtitle = "Attach video thumbnail to downloaded files",
                 checked = settings.defaultEmbedThumbnail,
                 onCheckedChange = { v -> onUpdateSettings { it.copy(defaultEmbedThumbnail = v) } }
+            )
+
+            HorizontalDivider()
+
+            Text("Authentication Cookies (Instagram / Private)", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
+            OutlinedTextField(
+                value = settings.cookiesTxt,
+                onValueChange = { v -> onUpdateSettings { it.copy(cookiesTxt = v) } },
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text("Paste Netscape cookies.txt content here...") },
+                minLines = 2,
+                maxLines = 4,
+                shape = RoundedCornerShape(14.dp)
             )
             Spacer(Modifier.height(4.dp))
         }

@@ -190,7 +190,7 @@ class VelaViewModel(application: Application) : AndroidViewModel(application) {
 
         viewModelScope.launch {
             _uiState.update { it.copy(isFetchingInfo = true, fetchError = null) }
-            val result = engine.fetchMediaInfo(rawUrl)
+            val result = engine.fetchMediaInfo(rawUrl, _uiState.value.settings.cookiesTxt)
             result.onSuccess { preview ->
                 _uiState.update {
                     it.copy(
@@ -200,10 +200,15 @@ class VelaViewModel(application: Application) : AndroidViewModel(application) {
                     )
                 }
             }.onFailure { err ->
+                val rawMsg = err.message ?: "Failed to inspect media link"
+                val cleanMsg = rawMsg.lines()
+                    .firstOrNull { it.contains("ERROR:", ignoreCase = true) }
+                    ?: rawMsg.lines().lastOrNull { it.isNotBlank() }
+                    ?: rawMsg
                 _uiState.update {
                     it.copy(
                         isFetchingInfo = false,
-                        fetchError = err.message ?: "Failed to inspect media link"
+                        fetchError = cleanMsg
                     )
                 }
             }
@@ -264,7 +269,12 @@ class VelaViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update { it.copy(queue = listOf(initialItem) + it.queue) }
 
         val job = viewModelScope.launch {
-            val result = engine.executeDownload(taskId, url, options) { progress, eta, line ->
+            val result = engine.executeDownload(
+                taskId = taskId,
+                url = url,
+                options = options,
+                cookiesTxt = _uiState.value.settings.cookiesTxt
+            ) { progress, eta, line ->
                 _uiState.update { state ->
                     state.copy(
                         queue = state.queue.map { item ->
