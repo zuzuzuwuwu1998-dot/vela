@@ -406,7 +406,10 @@
         <div class="brand-badge">✦</div>
         <span>Vela</span>
       </div>
-      <button class="icon-btn" onclick="openSettings()" title="Settings">⚙️</button>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span id="bridge-pill" class="platform-pill" style="font-size:0.72rem;">Checking engine...</span>
+        <button class="icon-btn" onclick="openSettings()" title="Settings">⚙️</button>
+      </div>
     </header>
 
     <main class="content">
@@ -540,6 +543,11 @@
         <button class="chip-btn active" id="theme-dark" onclick="setTheme('dark')">Obsidian Dark</button>
         <button class="chip-btn" id="theme-light" onclick="setTheme('light')">Daylight</button>
       </div>
+      <div style="font-size:0.86rem;font-weight:700;">Local Web Engine (yt-dlp Bridge)</div>
+      <input id="bridge-url-input" class="field-input" value="http://127.0.0.1:8787" onchange="saveBridgeUrl(this.value)" />
+      <div style="font-size:0.76rem;color:var(--muted);">
+        Run <code>python3 server/vela_server.py</code> to enable real yt-dlp + FFmpeg downloads directly in browser.
+      </div>
       <div style="font-size:0.86rem;font-weight:700;">Storage</div>
       <button class="chip-btn" onclick="clearAllHistory()" style="color:var(--danger);">Clear Download History</button>
     </div>
@@ -553,6 +561,32 @@
     let selectedContainer = 'MP4';
     let selectedAudio = 'MP3 320k';
     let currentPreview = { title: 'Media Link', uploader: 'Web Media', thumb: null, directUrl: null };
+    let bridgeUrl = localStorage.getItem('vela_bridge_url') || 'http://127.0.0.1:8787';
+    let bridgeOnline = false;
+
+    async function checkBridge() {
+      const pill = document.getElementById('bridge-pill');
+      try {
+        const res = await fetch(bridgeUrl + '/health', { signal: AbortSignal.timeout(2000) });
+        const data = await res.json();
+        if (data && data.ok) {
+          bridgeOnline = true;
+          pill.textContent = '● Engine Ready';
+          pill.style.color = 'var(--secondary)';
+          return;
+        }
+      } catch {}
+      bridgeOnline = false;
+      pill.textContent = '○ Cloud Fallback';
+      pill.style.color = 'var(--muted)';
+    }
+
+    function saveBridgeUrl(val) {
+      bridgeUrl = val.trim().replace(/\/$/, '') || 'http://127.0.0.1:8787';
+      localStorage.setItem('vela_bridge_url', bridgeUrl);
+      checkBridge();
+    }
+
     let downloads = JSON.parse(localStorage.getItem('vela_downloads') || '[]');
 
     function detectPlatform(url) {
@@ -644,7 +678,22 @@
       document.getElementById('preview-img').style.display = 'none';
 
       try {
-        if (platform === 'TikTok') {
+        if (bridgeOnline) {
+          const res = await fetch(bridgeUrl + '/api/info', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url: firstUrl })
+          });
+          const json = await res.json();
+          if (json && json.title) {
+            currentPreview = {
+              title: json.title,
+              uploader: json.uploader || platform,
+              thumb: json.thumbnail || null,
+              directUrl: null
+            };
+          }
+        } else if (platform === 'TikTok') {
           const res = await fetch('https://www.tikwm.com/api/?url=' + encodeURIComponent(firstUrl));
           const json = await res.json();
           if (json && json.data) {
@@ -733,20 +782,21 @@
       }
     }
 
-    function startDownload() {
+    async function startDownload() {
       const urls = document.getElementById('url-input').value
         .split('\n').map(s => s.trim()).filter(s => s.startsWith('http'));
       if (!urls.length) return;
 
+      const clipStart = document.getElementById('clip-start')?.value || '00:00';
+      const clipEnd = document.getElementById('clip-end')?.value || '00:30';
+      const customArgs = document.getElementById('cmd-args')?.value || '';
+
       closeSheet('config-sheet');
 
-      urls.forEach((url, idx) => {
+      for (let idx = 0; idx < urls.length; idx++) {
+        const url = urls[idx];
         const id = 'dl_' + Date.now() + '_' + idx;
         const platform = detectPlatform(url);
-        const mediaUrl = idx === 0
-          ? (currentMode === 'AUDIO' ? (currentPreview.audioUrl || currentPreview.directUrl) : currentPreview.directUrl)
-          : null;
-
         const entry = {
           id,
           url,
@@ -754,39 +804,81 @@
           uploader: idx === 0 ? currentPreview.uploader : platform,
           thumb: idx === 0 ? currentPreview.thumb : null,
           type: currentMode === 'COMMAND' ? 'VIDEO' : currentMode,
-          formatLabel: currentMode === 'AUDIO' ? selectedAudio : (currentMode === 'CLIP' ? 'Clip' : `${selectedQuality} ${selectedContainer}`),
-          progress: 12,
+          formatLabel: currentMode === 'AUDIO' ? selectedAudio : (currentMode === 'CLIP' ? `${clipStart}-${clipEnd}` : `${selectedQuality} ${selectedContainer}`),
+          progress: 5,
           status: 'RUNNING',
-          mediaUrl
+          mediaUrl: null
         };
         downloads.unshift(entry);
+        saveDownloads();
+        switchTab('downloads');
 
-        if (mediaUrl && idx === 0) {
-          const a = document.createElement('a');
-          a.href = mediaUrl;
-          a.target = '_blank';
-          a.rel = 'noopener';
-          a.download = '';
-          a.click();
+        if (bridgeOnline) {
+          try {
+            const startRes = await fetch(bridgeUrl + '/api/download', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                url,
+                mode: currentMode,
+                quality: selectedQuality,
+                container: selectedContainer,
+                audioPreset: selectedAudio,
+                clipStart,
+                clipEnd,
+                customArgs
+              })
+            });
+            const { jobId } = await startRes.json();
+            const poller = setInterval(async () => {
+              try {
+                const stRes = await fetch(bridgeUrl + '/api/status/' + jobId);
+                const st = await stRes.json();
+                const item = downloads.find(d => d.id === id);
+                if (!item) { clearInterval(poller); return; }
+                item.progress = st.progress || item.progress;
+                if (st.status === 'COMPLETED') {
+                  item.status = 'COMPLETED';
+                  item.progress = 100;
+                  item.mediaUrl = bridgeUrl + '/api/file/' + jobId;
+                  if (st.filename) item.title = st.filename;
+                  clearInterval(poller);
+                  const a = document.createElement('a');
+                  a.href = item.mediaUrl;
+                  a.download = st.filename || '';
+                  document.body.appendChild(a);
+                  a.click();
+                  a.remove();
+                } else if (st.status === 'FAILED') {
+                  item.status = 'FAILED';
+                  item.uploader = st.error || 'Download failed';
+                  clearInterval(poller);
+                }
+                saveDownloads();
+                renderDownloads();
+              } catch { clearInterval(poller); }
+            }, 600);
+            continue;
+          } catch {}
         }
 
-        const timer = setInterval(() => {
-          const item = downloads.find(d => d.id === id);
-          if (!item) { clearInterval(timer); return; }
-          item.progress = Math.min(100, item.progress + 22);
-          if (item.progress >= 100) {
-            item.status = 'COMPLETED';
-            clearInterval(timer);
-          }
+        // Cloud fallback (TikTok direct link if available)
+        const fallbackUrl = idx === 0
+          ? (currentMode === 'AUDIO' ? (currentPreview.audioUrl || currentPreview.directUrl) : currentPreview.directUrl)
+          : null;
+        const item = downloads.find(d => d.id === id);
+        if (item) {
+          item.progress = 100;
+          item.status = fallbackUrl ? 'COMPLETED' : 'FAILED';
+          item.mediaUrl = fallbackUrl;
+          if (!fallbackUrl) item.uploader = 'Start local server (vela_server.py) for ' + platform;
           saveDownloads();
-          if (document.getElementById('page-downloads').classList.contains('active')) {
-            renderDownloads();
+          renderDownloads();
+          if (fallbackUrl) {
+            window.open(fallbackUrl, '_blank', 'noopener');
           }
-        }, 350);
-      });
-
-      saveDownloads();
-      switchTab('downloads');
+        }
+      }
     }
 
     function saveDownloads() {
@@ -856,6 +948,8 @@
     if (localStorage.getItem('vela_theme') === 'light') {
       setTheme('light');
     }
+    document.getElementById('bridge-url-input').value = bridgeUrl;
+    checkBridge();
     renderDownloads();
   </script>
 </body>
