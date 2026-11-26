@@ -131,6 +131,17 @@ class VelaHandler(BaseHTTPRequestHandler):
 
     def do_GET(self) -> None:
         path = urlparse(self.path).path
+        if path in ("/", "/index.html"):
+            index_file = Path(__file__).resolve().parent.parent / "docs" / "index.html"
+            if index_file.exists():
+                html = index_file.read_bytes()
+                self.send_response(200)
+                self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.send_header("Content-Length", str(len(html)))
+                self.end_headers()
+                self.wfile.write(html)
+                return
+
         if path == "/health":
             ver = subprocess.check_output(["yt-dlp", "--version"], text=True).strip()
             return self._json(200, {"ok": True, "ytdlp": ver})
