@@ -528,7 +528,7 @@ fun GrabScreen(
                         ) {
                             Icon(Icons.Rounded.ContentCut, contentDescription = null, tint = MaterialTheme.colorScheme.tertiary)
                             Text(
-                                "Smart Segment Clipper (Cut before download)",
+                                "Smart Segment Klip (Potong sebelum download)",
                                 style = MaterialTheme.typography.labelLarge,
                                 fontWeight = FontWeight.SemiBold
                             )
@@ -679,7 +679,7 @@ fun GrabScreen(
                     Text(
                         text = when {
                             linkCount > 1 -> "Harvest $linkCount Links"
-                            state.options.mode == DownloadMode.CLIPPER -> "Clip & Download"
+                            state.options.mode == DownloadMode.CLIPPER -> "Klip & Download"
                             state.options.mode == DownloadMode.AUDIO -> "Extract Audio"
                             else -> "Harvest Media"
                         },

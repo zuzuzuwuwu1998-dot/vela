@@ -46,7 +46,7 @@ enum class PlatformType(val label: String, val badgeHex: Long) {
 enum class DownloadMode(val label: String) {
     VIDEO("Video"),
     AUDIO("Audio"),
-    CLIPPER("Clipper"),
+    CLIPPER("Klip"),
     COMMAND("Command")
 }
 

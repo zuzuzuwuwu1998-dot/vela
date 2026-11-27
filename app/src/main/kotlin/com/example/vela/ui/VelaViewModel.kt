@@ -35,7 +35,7 @@ enum class VaultFilter(val label: String) {
     ALL("All"),
     VIDEO("Video"),
     AUDIO("Audio"),
-    CLIP("Clips")
+    CLIP("Klip")
 }
 
 data class VelaUiState(

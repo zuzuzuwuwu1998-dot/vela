@@ -417,7 +417,7 @@
       <!-- TAB 1: DOWNLOAD (SEAL-STYLE) -->
       <section class="page active" id="page-download">
         <div class="hero-title">Download</div>
-        <div class="hero-sub">Video, Audio Studio, &amp; Segment Clipper</div>
+        <div class="hero-sub">Video, Audio Studio, &amp; Segment Klip</div>
 
         <div class="url-card">
           <div class="url-top">
@@ -443,7 +443,7 @@
 
         <div class="quick-info">
           <div class="qi-item">
-            <span class="qi-title">✂️ Segment Clipper</span>
+            <span class="qi-title">✂️ Segment Klip</span>
             <span class="qi-desc">Cut Start–End timestamps before saving</span>
           </div>
           <div class="qi-item">
@@ -474,7 +474,7 @@
           <button class="chip-btn active" onclick="setFilter('ALL', this)">All</button>
           <button class="chip-btn" onclick="setFilter('VIDEO', this)">Video</button>
           <button class="chip-btn" onclick="setFilter('AUDIO', this)">Audio</button>
-          <button class="chip-btn" onclick="setFilter('CLIP', this)">Clips</button>
+          <button class="chip-btn" onclick="setFilter('CLIP', this)">Klip</button>
         </div>
         <div id="downloads-list" style="display:flex;flex-direction:column;gap:10px;"></div>
       </section>
@@ -512,7 +512,7 @@
       <div class="seg-bar">
         <button class="seg-btn active" onclick="setMode('VIDEO', this)">Video</button>
         <button class="seg-btn" onclick="setMode('AUDIO', this)">Audio</button>
-        <button class="seg-btn" onclick="setMode('CLIP', this)">Clipper</button>
+        <button class="seg-btn" onclick="setMode('CLIP', this)">Klip</button>
         <button class="seg-btn" onclick="setMode('COMMAND', this)">Command</button>
       </div>
 
@@ -781,7 +781,7 @@
         `;
       } else if (currentMode === 'CLIP') {
         box.innerHTML = `
-          <div style="font-size:0.84rem;font-weight:700;color:var(--tertiary);">✂️ Segment Clipper</div>
+          <div style="font-size:0.84rem;font-weight:700;color:var(--tertiary);">✂️ Segment Klip</div>
           <div class="two-col">
             <input id="clip-start" class="field-input" value="00:00" placeholder="Start (MM:SS)" />
             <input id="clip-end" class="field-input" value="00:30" placeholder="End (MM:SS)" />

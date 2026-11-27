@@ -1,8 +1,12 @@
 package com.example.vela.engine
 
+import android.content.ContentValues
 import android.content.Context
 import android.media.MediaScannerConnection
+import android.os.Build
 import android.os.Environment
+import android.provider.MediaStore
+import android.webkit.MimeTypeMap
 import com.example.vela.model.AudioPreset
 import com.example.vela.model.DownloadMode
 import com.example.vela.model.DownloadOptions
@@ -26,6 +30,9 @@ data class DownloadResult(
 class VelaDownloadEngine(private val context: Context) {
 
     fun getOutputDirectory(mode: DownloadMode): File {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            return File(context.getExternalFilesDir(null) ?: context.filesDir, "Vela").apply { mkdirs() }
+        }
         val base = when (mode) {
             DownloadMode.AUDIO -> Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC)
             else -> Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES)
@@ -35,6 +42,37 @@ class VelaDownloadEngine(private val context: Context) {
             return File(context.getExternalFilesDir(null) ?: context.filesDir, "Vela").apply { mkdirs() }
         }
         return velaDir
+    }
+
+    private fun exportToPublicMediaStore(file: File, isAudio: Boolean) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || !file.exists()) return
+        runCatching {
+            val mime = MimeTypeMap.getSingleton()
+                .getMimeTypeFromExtension(file.extension.lowercase())
+                ?: if (isAudio) "audio/mpeg" else "video/mp4"
+            val values = ContentValues().apply {
+                put(MediaStore.MediaColumns.DISPLAY_NAME, file.name)
+                put(MediaStore.MediaColumns.MIME_TYPE, mime)
+                put(
+                    MediaStore.MediaColumns.RELATIVE_PATH,
+                    if (isAudio) "${Environment.DIRECTORY_MUSIC}/Vela" else "${Environment.DIRECTORY_MOVIES}/Vela"
+                )
+                put(MediaStore.MediaColumns.IS_PENDING, 1)
+            }
+            val collection = if (isAudio) {
+                MediaStore.Audio.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+            } else {
+                MediaStore.Video.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+            }
+            val resolver = context.contentResolver
+            val uri = resolver.insert(collection, values) ?: return
+            resolver.openOutputStream(uri)?.use { out ->
+                file.inputStream().use { it.copyTo(out) }
+            }
+            values.clear()
+            values.put(MediaStore.MediaColumns.IS_PENDING, 0)
+            resolver.update(uri, values, null, null)
+        }
     }
 
     private fun applyCommonNetworkOptions(request: YoutubeDLRequest, cookiesTxt: String) {
@@ -95,6 +133,10 @@ class VelaDownloadEngine(private val context: Context) {
                 ?: outDir.listFiles()?.maxByOrNull { it.lastModified() }
 
             if (outputFile != null && outputFile.exists()) {
+                val isAudio = options.mode == DownloadMode.AUDIO ||
+                    (options.mode == DownloadMode.CLIPPER && options.clipAudioOnly) ||
+                    outputFile.extension.lowercase() in setOf("mp3", "m4a", "flac", "opus", "wav")
+                exportToPublicMediaStore(outputFile, isAudio)
                 MediaScannerConnection.scanFile(
                     context,
                     arrayOf(outputFile.absolutePath),
